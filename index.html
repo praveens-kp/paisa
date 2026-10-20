@@ -76,7 +76,7 @@ const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 let tab='home',mon=todayS().slice(0,7),draft={type:'expense',acct:'cash',date:todayS()},show='',pdel='';
 const CATS={expense:['Food','Groceries','Transport','Shopping','Bills','Rent','Health','Entertainment','Travel','Other'],income:['Salary','Business','Interest','Other'],saving:['Emergency fund','Investment','FD / RD','Goal','Other'],cardpay:['Card bill']};
-const TYPES=[['expense','Expense'],['income','Income'],['saving','Saving'],['cardpay','Card bill']];
+const TYPES=[['expense','Expense'],['income','Income'],['saving','Saving'],['cardpay','Pay card bill']];
 const ICON={home:'<path d="M3 11l9-8 9 8v10H3z"/>',txn:'<path d="M4 6h16M4 12h16M4 18h10"/>',add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',emi:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'};
 const NAMES={home:'Home',txn:'History',add:'Add',emi:'EMIs',card:'Cards'};
 
@@ -86,7 +86,7 @@ function shift(d){let[y,m]=mon.split('-').map(Number);m+=d;if(m<1){m=12;y--}if(m
 const monLabel=m=>MN[+m.slice(5)-1]+' '+m.slice(0,4);
 const sum=a=>a.reduce((s,t)=>s+t.amt,0);
 const inMon=t=>t.date.slice(0,7)===mon;
-const cardOut=id=>sum(S.tx.filter(t=>t.acct===id&&t.type==='expense'))-sum(S.tx.filter(t=>t.acct===id&&t.type==='cardpay'));
+const cardOut=id=>((S.cards.find(c=>c.id===id)||{}).open||0)+sum(S.tx.filter(t=>t.acct===id&&t.type==='expense'))-sum(S.tx.filter(t=>t.acct===id&&t.type==='cardpay'));
 const acctName=id=>id==='cash'?'Cash / UPI / Bank':(S.cards.find(c=>c.id===id)||{name:'Deleted card'}).name;
 const curM=()=>todayS().slice(0,7);
 
@@ -126,7 +126,8 @@ function vAdd(){
   <label for="a_amt">Amount (₹)</label><input id="a_amt" type="number" inputmode="decimal" min="0" placeholder="0" value="${esc(f.amt||'')}">
   <label for="a_cat">Category</label><select id="a_cat">${cats.map(c=>`<option ${f.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
   <label for="a_acct">${isPay?'Which card':(f.type==='expense'?'Paid with':'Account')}</label>
-  ${isPay&&!S.cards.length?'<div class="sub">You need a credit card before you can record a bill payment.</div><button class="btn" onclick="go(&#39;card&#39;)">Add a credit card</button>':`<select id="a_acct">${accts.map(([id,n])=>`<option value="${esc(id)}" ${f.acct===id?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+  ${isPay&&!S.cards.length?'<div class="sub">You need a credit card before you can record a bill payment.</div><button class="btn" onclick="go(&#39;card&#39;)">Add a credit card</button>':`<select id="a_acct" onchange="readF();render()">${accts.map(([id,n])=>`<option value="${esc(id)}" ${f.acct===id?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+  ${isPay&&S.cards.length?'<div class="sub" style="margin-top:8px">A bill payment reduces what you owe. Owed now on '+esc(acctName(f.acct))+': <b>'+fmt(cardOut(f.acct))+'</b>. To add spending to a card, use Expense and pick the card under “Paid with”.</div>':''}
   <label for="a_date">Date</label><input id="a_date" type="date" value="${esc(f.date)}">
   <label for="a_note">Note (optional)</label><input id="a_note" placeholder="e.g. Dinner with friends" value="${esc(f.note||'')}">
   ${isPay&&!S.cards.length?'':'<button class="btn" onclick="saveTx()">Save entry</button>'}</div>`;
@@ -153,13 +154,13 @@ function delEmi(id){if(pdel!==id){pdel=id;render();return}S.emis=S.emis.filter(x
 function nextBill(day){const n=new Date(),d=new Date(n.getFullYear(),n.getMonth(),day);if(d<new Date(n.getFullYear(),n.getMonth(),n.getDate()))d.setMonth(d.getMonth()+1);return d.getDate()+' '+MN[d.getMonth()]}
 function vCard(){
   const list=S.cards.map(c=>{const o=cardOut(c.id),u=c.limit>0?Math.round(Math.max(0,o)/c.limit*100):0;
-    return`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="sub">Bill on ${nextBill(c.day)}</span></div><div class="v ${o>0?'neg':''}">${fmt(Math.max(0,o))}</div><div class="sub">outstanding${c.limit?` of ${fmt(c.limit)} limit · ${u}% used`:''}</div>${c.limit?`<div class="bar ${u>=70?'warn':''}"><i style="width:${Math.min(100,u)}%"></i></div>`:''}
+    return`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="sub">Bill on ${nextBill(c.day)}</span></div><div class="v ${o>0?'neg':''}">${fmt(Math.max(0,o))}</div><div class="sub">${o<0?'paid ahead by '+fmt(-o)+' · ':''}outstanding${c.limit?` of ${fmt(c.limit)} limit · ${u}% used`:''}</div>${c.limit?`<div class="bar ${u>=70?'warn':''}"><i style="width:${Math.min(100,u)}%"></i></div>`:''}
     <div class="row" style="margin-top:10px"><button class="btn s" onclick="draft.type='cardpay';draft.acct='${c.id}';go('add')">Pay bill</button><button class="link" onclick="delCard('${c.id}')">${pdel===c.id?'Sure?':'Remove'}</button></div></div>`}).join('');
   return`<h1>Credit cards</h1>${list||'<div class="card empty">No cards yet. Add one, then pick it when you log an expense.</div>'}
-  ${show==='card'?`<div class="card"><label for="c_n">Card name</label><input id="c_n" placeholder="HDFC Regalia"><label for="c_l">Credit limit (₹)</label><input id="c_l" type="number" inputmode="decimal"><label for="c_d">Bill due day of month</label><input id="c_d" type="number" min="1" max="31" value="15"><button class="btn" onclick="addCard()">Save card</button></div>`:`<button class="btn" onclick="show='card';render()">Add a credit card</button>`}`;
+  ${show==='card'?`<div class="card"><label for="c_n">Card name</label><input id="c_n" placeholder="HDFC Regalia"><label for="c_l">Credit limit (₹)</label><input id="c_l" type="number" inputmode="decimal"><label for="c_o">Amount already owed on this card (₹)</label><input id="c_o" type="number" inputmode="decimal" value="0"><label for="c_d">Bill due day of month</label><input id="c_d" type="number" min="1" max="31" value="15"><button class="btn" onclick="addCard()">Save card</button></div>`:`<button class="btn" onclick="show='card';render()">Add a credit card</button>`}`;
 }
 function addCard(){const v=i=>document.getElementById(i).value,n=v('c_n').trim(),d=parseInt(v('c_d'));if(!n||!(d>=1&&d<=31)){toast('Enter a name and due day');return}
-  S.cards.push({id:uid(),name:n,limit:parseFloat(v('c_l'))||0,day:d});show='';save();render()}
+  S.cards.push({id:uid(),name:n,limit:parseFloat(v('c_l'))||0,open:parseFloat(v('c_o'))||0,day:d});show='';save();render()}
 function delCard(id){if(pdel!==id){pdel=id;render();return}S.cards=S.cards.filter(x=>x.id!==id);pdel='';save();render()}
 
 function exportD(){const b=new Blob([JSON.stringify(S)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='paisa-backup-'+todayS()+'.json';a.click();toast('Backup created')}
