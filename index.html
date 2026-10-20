@@ -1,0 +1,169 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>Paisa – Money Tracker</title>
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-title" content="Paisa">
+<meta name="theme-color" content="#0f6e6e">
+<link rel="manifest" href="manifest.json">
+<link rel="icon" href="icon-192.png">
+<link rel="apple-touch-icon" href="icon-192.png">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Figtree:wght@400;600;800&display=swap">
+<style>
+:root{--bg:#eef2f4;--card:#fff;--ink:#14232b;--mut:#62767f;--acc:#0f6e6e;--onacc:#fff;--red:#b4410f;--grn:#13795b;--bd:#d9e2e6;--soft:#e3ecef;
+box-sizing:border-box;padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px);color-scheme:light}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#0f1b20;--card:#17262d;--ink:#e6eef1;--mut:#8ea3ab;--acc:#4cc2b8;--onacc:#06201e;--red:#f08a5d;--grn:#5fd0a5;--bd:#26383f;--soft:#1e3039;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#0f1b20;--card:#17262d;--ink:#e6eef1;--mut:#8ea3ab;--acc:#4cc2b8;--onacc:#06201e;--red:#f08a5d;--grn:#5fd0a5;--bd:#26383f;--soft:#1e3039;color-scheme:dark}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;background:var(--bg);color:var(--ink);font-family:'Figtree','Avenir Next',system-ui,sans-serif;font-size:16px}
+main{max-width:560px;margin:0 auto;padding:14px 14px 96px}
+h1{font-size:22px;margin:4px 0 12px;font-weight:800;letter-spacing:-.3px}
+h2{font-size:15px;margin:18px 0 8px;font-weight:700;color:var(--mut)}
+.card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:14px;margin-bottom:10px}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.grid .card{margin:0}
+.k{font-size:13px;color:var(--mut)}
+.v{font-size:22px;font-weight:800;font-variant-numeric:tabular-nums;margin-top:2px}
+.big{font-size:34px}
+.pos{color:var(--grn)}.neg{color:var(--red)}
+.row{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.tx{padding:11px 0;border-bottom:1px solid var(--bd)}.tx:last-child{border:0}
+.tx b{font-variant-numeric:tabular-nums}
+.sub{font-size:13px;color:var(--mut)}
+.bar{height:8px;background:var(--soft);border-radius:6px;overflow:hidden;margin-top:6px}
+.bar i{display:block;height:100%;background:var(--acc);border-radius:6px}
+.bar.warn i{background:var(--red)}
+label{display:block;font-size:13px;color:var(--mut);margin:12px 0 4px}
+input,select{width:100%;font:inherit;padding:12px;border-radius:10px;border:1px solid var(--bd);background:var(--bg);color:var(--ink)}
+input:focus,select:focus,button:focus-visible{outline:2px solid var(--acc);outline-offset:1px}
+.seg{display:flex;background:var(--soft);border-radius:12px;padding:3px;gap:3px}
+.seg button{flex:1;border:0;background:none;color:var(--mut);font:inherit;font-size:14px;font-weight:600;padding:9px 2px;border-radius:9px}
+.seg button.on{background:var(--card);color:var(--ink);box-shadow:0 1px 2px rgba(0,0,0,.15)}
+.btn{border:0;background:var(--acc);color:var(--onacc);font:inherit;font-weight:700;padding:13px 16px;border-radius:12px;width:100%;margin-top:16px}
+.btn.s{width:auto;margin:0;padding:8px 12px;font-size:14px}
+.btn.g{background:var(--soft);color:var(--ink)}
+.link{border:0;background:none;color:var(--mut);font:inherit;font-size:13px;padding:6px}
+nav{position:fixed;left:0;right:0;bottom:0;background:var(--card);border-top:1px solid var(--bd);display:flex;justify-content:space-around;padding:6px 4px calc(6px + env(safe-area-inset-bottom,0px))}
+nav button{flex:1;border:0;background:none;color:var(--mut);font:inherit;font-size:12px;font-weight:600;padding:6px 0;display:flex;flex-direction:column;align-items:center;gap:2px}
+nav button svg{width:22px;height:22px;stroke:currentColor;fill:none;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round}
+nav button.on{color:var(--acc)}
+.mnav{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mnav button{border:1px solid var(--bd);background:var(--card);color:var(--ink);border-radius:10px;width:40px;height:40px;font-size:18px}
+.empty{text-align:center;color:var(--mut);padding:26px 10px;font-size:14px}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:90px;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:20px;font-size:14px;z-index:9}
+.tag{display:inline-block;font-size:12px;padding:2px 8px;border-radius:10px;background:var(--soft);color:var(--mut);font-weight:600}
+.tag.due{background:var(--red);color:#fff}
+</style>
+</head>
+<body>
+<main id="app"></main>
+<nav id="nav"></nav>
+<script>
+const K='paisa_v1';
+let S=load();
+function load(){try{const j=localStorage.getItem(K);if(j){const d=JSON.parse(j);return{tx:d.tx||[],emis:d.emis||[],cards:d.cards||[]}}}catch(e){}return{tx:[],emis:[],cards:[]}}
+function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Couldn’t save – storage is blocked')}}
+const $=s=>document.querySelector(s);
+const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+const fmt=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0});
+const todayS=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
+const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
+const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+let tab='home',mon=todayS().slice(0,7),form={type:'expense',acct:'cash',date:todayS()},show='',pdel='';
+const CATS={expense:['Food','Groceries','Transport','Shopping','Bills','Rent','Health','Entertainment','Travel','Other'],income:['Salary','Business','Interest','Other'],saving:['Emergency fund','Investment','FD / RD','Goal','Other'],cardpay:['Card bill']};
+const TYPES=[['expense','Expense'],['income','Income'],['saving','Saving'],['cardpay','Card bill']];
+const ICON={home:'<path d="M3 11l9-8 9 8v10H3z"/>',txn:'<path d="M4 6h16M4 12h16M4 18h10"/>',add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',emi:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'};
+const NAMES={home:'Home',txn:'History',add:'Add',emi:'EMIs',card:'Cards'};
+
+function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
+function go(t){tab=t;show='';pdel='';render();scrollTo(0,0)}
+function shift(d){let[y,m]=mon.split('-').map(Number);m+=d;if(m<1){m=12;y--}if(m>12){m=1;y++}mon=y+'-'+String(m).padStart(2,'0');render()}
+const monLabel=m=>MN[+m.slice(5)-1]+' '+m.slice(0,4);
+const sum=a=>a.reduce((s,t)=>s+t.amt,0);
+const inMon=t=>t.date.slice(0,7)===mon;
+const cardOut=id=>sum(S.tx.filter(t=>t.acct===id&&t.type==='expense'))-sum(S.tx.filter(t=>t.acct===id&&t.type==='cardpay'));
+const acctName=id=>id==='cash'?'Cash / UPI / Bank':(S.cards.find(c=>c.id===id)||{name:'Deleted card'}).name;
+const curM=()=>todayS().slice(0,7);
+
+function render(){
+  $('#nav').innerHTML=Object.keys(NAMES).map(t=>`<button class="${tab===t?'on':''}" onclick="go('${t}')"><svg viewBox="0 0 24 24">${ICON[t]}</svg>${NAMES[t]}</button>`).join('');
+  $('#app').innerHTML=({home:vHome,txn:vTxn,add:vAdd,emi:vEmi,card:vCard})[tab]();
+}
+function mnav(){return`<div class="mnav"><button onclick="shift(-1)" aria-label="Previous month">‹</button><b>${monLabel(mon)}</b><button onclick="shift(1)" aria-label="Next month">›</button></div>`}
+
+function vHome(){
+  const m=S.tx.filter(inMon),inc=sum(m.filter(t=>t.type==='income')),exp=sum(m.filter(t=>t.type==='expense')),sav=sum(m.filter(t=>t.type==='saving')),left=inc-exp-sav;
+  const totSav=sum(S.tx.filter(t=>t.type==='saving')),out=S.cards.reduce((s,c)=>s+Math.max(0,cardOut(c.id)),0);
+  const emiDue=S.emis.filter(e=>e.paid<e.total&&e.last!==curM()).reduce((s,e)=>s+e.amt,0),emiAll=S.emis.filter(e=>e.paid<e.total).reduce((s,e)=>s+e.amt,0);
+  const cat={};m.filter(t=>t.type==='expense').forEach(t=>cat[t.cat]=(cat[t.cat]||0)+t.amt);
+  const cl=Object.entries(cat).sort((a,b)=>b[1]-a[1]);
+  return`<h1>Paisa</h1>${mnav()}
+  <div class="card"><div class="k">Left this month</div><div class="v big ${left<0?'neg':'pos'}">${fmt(left)}</div><div class="sub">Income − spent − saved</div></div>
+  <div class="grid"><div class="card"><div class="k">Income</div><div class="v">${fmt(inc)}</div></div><div class="card"><div class="k">Spent</div><div class="v">${fmt(exp)}</div></div>
+  <div class="card"><div class="k">Saved this month</div><div class="v">${fmt(sav)}</div></div><div class="card"><div class="k">Total savings</div><div class="v pos">${fmt(totSav)}</div></div>
+  <div class="card"><div class="k">Card dues</div><div class="v ${out?'neg':''}">${fmt(out)}</div></div><div class="card"><div class="k">EMIs to pay now</div><div class="v ${emiDue?'neg':''}">${fmt(emiDue)}</div><div class="sub">${fmt(emiAll)} per month in all</div></div></div>
+  <h2>Where the money went</h2><div class="card">${cl.length?cl.map(([c,v])=>`<div style="margin-bottom:10px"><div class="row"><span>${esc(c)}</span><b>${fmt(v)}</b></div><div class="bar"><i style="width:${Math.round(v/exp*100)}%"></i></div></div>`).join(''):'<div class="empty">No spending recorded for this month.</div>'}</div>
+  <h2>Your data</h2><div class="card"><div class="sub" style="margin-bottom:10px">Everything stays on this phone. Back it up now and then.</div><div class="row"><button class="btn s g" onclick="exportD()">Download backup</button><label class="btn s g" style="margin:0;color:var(--ink)">Restore<input type="file" accept=".json" hidden onchange="importD(this)"></label></div></div>`;
+}
+
+function vTxn(){
+  const m=S.tx.filter(inMon).sort((a,b)=>b.date.localeCompare(a.date)||b.id.localeCompare(a.id));
+  return`<h1>History</h1>${mnav()}<div class="card">${m.length?m.map(t=>{const sg=t.type==='income'?'+':(t.type==='expense'?'−':'');return`<div class="tx row"><div><div>${esc(t.note||t.cat)}</div><div class="sub">${esc(t.cat)} · ${esc(acctName(t.acct))} · ${t.date.slice(8)} ${MN[+t.date.slice(5,7)-1]}</div></div><div style="text-align:right"><b class="${t.type==='income'?'pos':''}">${sg}${fmt(t.amt)}</b><br><button class="link" onclick="delTx('${t.id}')">${pdel===t.id?'Tap again to delete':'Delete'}</button></div></div>`}).join(''):'<div class="empty">Nothing here yet. Add your first entry from the Add tab.</div>'}</div>`;
+}
+function delTx(id){if(pdel!==id){pdel=id;render();return}const t=S.tx.find(x=>x.id===id);if(t&&t.emi){const e=S.emis.find(x=>x.id===t.emi);if(e){e.paid=Math.max(0,e.paid-1);e.last=''}}S.tx=S.tx.filter(x=>x.id!==id);pdel='';save();render()}
+
+function vAdd(){
+  const f=form,cats=CATS[f.type],isPay=f.type==='cardpay';
+  const accts=isPay?S.cards.map(c=>[c.id,c.name]):[['cash','Cash / UPI / Bank']].concat(f.type==='expense'?S.cards.map(c=>[c.id,c.name]):[]);
+  if(!accts.find(a=>a[0]===f.acct))f.acct=accts.length?accts[0][0]:'cash';
+  return`<h1>Add entry</h1><div class="seg">${TYPES.map(([k,n])=>`<button class="${f.type===k?'on':''}" onclick="form.type='${k}';readF();render()">${n}</button>`).join('')}</div>
+  <div class="card" style="margin-top:12px">
+  <label for="a_amt">Amount (₹)</label><input id="a_amt" type="number" inputmode="decimal" min="0" placeholder="0" value="${esc(f.amt||'')}">
+  <label for="a_cat">Category</label><select id="a_cat">${cats.map(c=>`<option ${f.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
+  <label for="a_acct">${isPay?'Which card':(f.type==='expense'?'Paid with':'Account')}</label>
+  ${isPay&&!S.cards.length?'<div class="sub">Add a credit card first in the Cards tab.</div>':`<select id="a_acct">${accts.map(([id,n])=>`<option value="${esc(id)}" ${f.acct===id?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+  <label for="a_date">Date</label><input id="a_date" type="date" value="${esc(f.date)}">
+  <label for="a_note">Note (optional)</label><input id="a_note" placeholder="e.g. Dinner with friends" value="${esc(f.note||'')}">
+  <button class="btn" onclick="saveTx()">Save entry</button></div>`;
+}
+function readF(){const g=i=>{const e=document.getElementById(i);return e?e.value:undefined};['amt','cat','acct','date','note'].forEach(k=>{const v=g('a_'+k);if(v!==undefined)form[k]=v})}
+function saveTx(){readF();const amt=parseFloat(form.amt);if(!(amt>0)){toast('Enter an amount above zero');return}
+  if(form.type==='cardpay'&&!S.cards.length){toast('Add a credit card first');return}
+  S.tx.push({id:uid(),type:form.type,amt,cat:form.cat||CATS[form.type][0],acct:form.acct||'cash',date:form.date||todayS(),note:(form.note||'').trim()});
+  save();form.amt='';form.note='';form.cat='';toast('Entry saved');render()}
+
+function vEmi(){
+  const list=S.emis.map(e=>{const left=e.total-e.paid,done=left<=0,paidNow=e.last===curM();
+    return`<div class="card"><div class="row"><div><b>${esc(e.name)}</b><div class="sub">${fmt(e.amt)} on the ${e.day}${['th','st','nd','rd'][(e.day%10<4&&(e.day<11||e.day>13))?e.day%10:0]} · ${Math.max(0,left)} left</div></div>${done?'<span class="tag">Finished</span>':paidNow?'<span class="tag">Paid this month</span>':'<span class="tag due">Due</span>'}</div>
+    <div class="bar"><i style="width:${Math.min(100,Math.round(e.paid/e.total*100))}%"></i></div><div class="row" style="margin-top:10px"><span class="sub">${e.paid} of ${e.total} paid · ${fmt(Math.max(0,left)*e.amt)} to go</span><span>${!done&&!paidNow?`<button class="btn s" onclick="payEmi('${e.id}')">Mark paid</button>`:''}<button class="link" onclick="delEmi('${e.id}')">${pdel===e.id?'Sure?':'Remove'}</button></span></div></div>`}).join('');
+  return`<h1>EMIs</h1>${list||'<div class="card empty">No EMIs yet. Add a loan or purchase you pay monthly.</div>'}
+  ${show==='emi'?`<div class="card"><label for="e_n">Name</label><input id="e_n" placeholder="Home loan, phone, car…"><label for="e_a">Monthly amount (₹)</label><input id="e_a" type="number" inputmode="decimal"><label for="e_d">Due day of month</label><input id="e_d" type="number" min="1" max="31" value="5"><label for="e_t">Total instalments</label><input id="e_t" type="number" inputmode="numeric"><label for="e_p">Already paid</label><input id="e_p" type="number" inputmode="numeric" value="0"><button class="btn" onclick="addEmi()">Save EMI</button></div>`:`<button class="btn" onclick="show='emi';render()">Add an EMI</button>`}`;
+}
+function addEmi(){const v=i=>document.getElementById(i).value,n=v('e_n').trim(),a=parseFloat(v('e_a')),d=parseInt(v('e_d')),t=parseInt(v('e_t')),p=parseInt(v('e_p'))||0;
+  if(!n||!(a>0)||!(t>0)||!(d>=1&&d<=31)){toast('Fill in name, amount, day and instalments');return}
+  S.emis.push({id:uid(),name:n,amt:a,day:d,total:t,paid:Math.min(p,t),last:''});show='';save();render()}
+function payEmi(id){const e=S.emis.find(x=>x.id===id);if(!e)return;e.paid++;e.last=curM();S.tx.push({id:uid(),type:'expense',amt:e.amt,cat:'EMI',acct:'cash',date:todayS(),note:e.name+' EMI',emi:e.id});save();toast('EMI marked as paid');render()}
+function delEmi(id){if(pdel!==id){pdel=id;render();return}S.emis=S.emis.filter(x=>x.id!==id);pdel='';save();render()}
+
+function nextBill(day){const n=new Date(),d=new Date(n.getFullYear(),n.getMonth(),day);if(d<new Date(n.getFullYear(),n.getMonth(),n.getDate()))d.setMonth(d.getMonth()+1);return d.getDate()+' '+MN[d.getMonth()]}
+function vCard(){
+  const list=S.cards.map(c=>{const o=cardOut(c.id),u=c.limit>0?Math.round(Math.max(0,o)/c.limit*100):0;
+    return`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="sub">Bill on ${nextBill(c.day)}</span></div><div class="v ${o>0?'neg':''}">${fmt(Math.max(0,o))}</div><div class="sub">outstanding${c.limit?` of ${fmt(c.limit)} limit · ${u}% used`:''}</div>${c.limit?`<div class="bar ${u>=70?'warn':''}"><i style="width:${Math.min(100,u)}%"></i></div>`:''}
+    <div class="row" style="margin-top:10px"><button class="btn s" onclick="form.type='cardpay';form.acct='${c.id}';go('add')">Pay bill</button><button class="link" onclick="delCard('${c.id}')">${pdel===c.id?'Sure?':'Remove'}</button></div></div>`}).join('');
+  return`<h1>Credit cards</h1>${list||'<div class="card empty">No cards yet. Add one, then pick it when you log an expense.</div>'}
+  ${show==='card'?`<div class="card"><label for="c_n">Card name</label><input id="c_n" placeholder="HDFC Regalia"><label for="c_l">Credit limit (₹)</label><input id="c_l" type="number" inputmode="decimal"><label for="c_d">Bill due day of month</label><input id="c_d" type="number" min="1" max="31" value="15"><button class="btn" onclick="addCard()">Save card</button></div>`:`<button class="btn" onclick="show='card';render()">Add a credit card</button>`}`;
+}
+function addCard(){const v=i=>document.getElementById(i).value,n=v('c_n').trim(),d=parseInt(v('c_d'));if(!n||!(d>=1&&d<=31)){toast('Enter a name and due day');return}
+  S.cards.push({id:uid(),name:n,limit:parseFloat(v('c_l'))||0,day:d});show='';save();render()}
+function delCard(id){if(pdel!==id){pdel=id;render();return}S.cards=S.cards.filter(x=>x.id!==id);pdel='';save();render()}
+
+function exportD(){const b=new Blob([JSON.stringify(S)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='paisa-backup-'+todayS()+'.json';a.click();toast('Backup created')}
+function importD(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tx))throw 0;S={tx:d.tx,emis:d.emis||[],cards:d.cards||[]};save();toast('Backup restored');render()}catch(e){toast('That file isn’t a Paisa backup')}};r.readAsText(f)}
+render();
+if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
+</script>
+</body>
+</html>
