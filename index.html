@@ -72,7 +72,7 @@ const fmt=n=>'₹'+Number(n||0).toLocaleString('en-IN',{maximumFractionDigits:0}
 const todayS=()=>new Date(Date.now()-new Date().getTimezoneOffset()*6e4).toISOString().slice(0,10);
 const uid=()=>Date.now().toString(36)+Math.random().toString(36).slice(2,6);
 const MN=['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-let tab='home',mon=todayS().slice(0,7),form={type:'expense',acct:'cash',date:todayS()},show='',pdel='';
+let tab='home',mon=todayS().slice(0,7),draft={type:'expense',acct:'cash',date:todayS()},show='',pdel='';
 const CATS={expense:['Food','Groceries','Transport','Shopping','Bills','Rent','Health','Entertainment','Travel','Other'],income:['Salary','Business','Interest','Other'],saving:['Emergency fund','Investment','FD / RD','Goal','Other'],cardpay:['Card bill']};
 const TYPES=[['expense','Expense'],['income','Income'],['saving','Saving'],['cardpay','Card bill']];
 const ICON={home:'<path d="M3 11l9-8 9 8v10H3z"/>',txn:'<path d="M4 6h16M4 12h16M4 18h10"/>',add:'<circle cx="12" cy="12" r="9"/><path d="M12 8v8M8 12h8"/>',emi:'<rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/>',card:'<rect x="2" y="5" width="20" height="14" rx="2"/><path d="M2 10h20"/>'};
@@ -116,10 +116,10 @@ function vTxn(){
 function delTx(id){if(pdel!==id){pdel=id;render();return}const t=S.tx.find(x=>x.id===id);if(t&&t.emi){const e=S.emis.find(x=>x.id===t.emi);if(e){e.paid=Math.max(0,e.paid-1);e.last=''}}S.tx=S.tx.filter(x=>x.id!==id);pdel='';save();render()}
 
 function vAdd(){
-  const f=form,cats=CATS[f.type],isPay=f.type==='cardpay';
+  const f=draft,cats=CATS[f.type],isPay=f.type==='cardpay';
   const accts=isPay?S.cards.map(c=>[c.id,c.name]):[['cash','Cash / UPI / Bank']].concat(f.type==='expense'?S.cards.map(c=>[c.id,c.name]):[]);
   if(!accts.find(a=>a[0]===f.acct))f.acct=accts.length?accts[0][0]:'cash';
-  return`<h1>Add entry</h1><div class="seg">${TYPES.map(([k,n])=>`<button class="${f.type===k?'on':''}" onclick="readF();form.type='${k}';form.cat='';render()">${n}</button>`).join('')}</div>
+  return`<h1>Add entry</h1><div class="seg">${TYPES.map(([k,n])=>`<button class="${f.type===k?'on':''}" onclick="readF();draft.type='${k}';draft.cat='';render()">${n}</button>`).join('')}</div>
   <div class="card" style="margin-top:12px">
   <label for="a_amt">Amount (₹)</label><input id="a_amt" type="number" inputmode="decimal" min="0" placeholder="0" value="${esc(f.amt||'')}">
   <label for="a_cat">Category</label><select id="a_cat">${cats.map(c=>`<option ${f.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
@@ -129,11 +129,11 @@ function vAdd(){
   <label for="a_note">Note (optional)</label><input id="a_note" placeholder="e.g. Dinner with friends" value="${esc(f.note||'')}">
   ${isPay&&!S.cards.length?'':'<button class="btn" onclick="saveTx()">Save entry</button>'}</div>`;
 }
-function readF(){const g=i=>{const e=document.getElementById(i);return e?e.value:undefined};['amt','cat','acct','date','note'].forEach(k=>{const v=g('a_'+k);if(v!==undefined)form[k]=v})}
-function saveTx(){readF();const amt=parseFloat(form.amt);if(!(amt>0)){toast('Enter an amount above zero');return}
-  if(form.type==='cardpay'&&!S.cards.length){toast('Add a credit card first');return}
-  S.tx.push({id:uid(),type:form.type,amt,cat:form.cat||CATS[form.type][0],acct:form.acct||'cash',date:form.date||todayS(),note:(form.note||'').trim()});
-  save();form.amt='';form.note='';form.cat='';toast('Entry saved');render()}
+function readF(){const g=i=>{const e=document.getElementById(i);return e?e.value:undefined};['amt','cat','acct','date','note'].forEach(k=>{const v=g('a_'+k);if(v!==undefined)draft[k]=v})}
+function saveTx(){readF();const amt=parseFloat(draft.amt);if(!(amt>0)){toast('Enter an amount above zero');return}
+  if(draft.type==='cardpay'&&!S.cards.length){toast('Add a credit card first');return}
+  S.tx.push({id:uid(),type:draft.type,amt,cat:draft.cat||CATS[draft.type][0],acct:draft.acct||'cash',date:draft.date||todayS(),note:(draft.note||'').trim()});
+  save();draft.amt='';draft.note='';draft.cat='';toast('Entry saved');render()}
 
 function vEmi(){
   const list=S.emis.map(e=>{const left=e.total-e.paid,done=left<=0,paidNow=e.last===curM();
@@ -152,7 +152,7 @@ function nextBill(day){const n=new Date(),d=new Date(n.getFullYear(),n.getMonth(
 function vCard(){
   const list=S.cards.map(c=>{const o=cardOut(c.id),u=c.limit>0?Math.round(Math.max(0,o)/c.limit*100):0;
     return`<div class="card"><div class="row"><b>${esc(c.name)}</b><span class="sub">Bill on ${nextBill(c.day)}</span></div><div class="v ${o>0?'neg':''}">${fmt(Math.max(0,o))}</div><div class="sub">outstanding${c.limit?` of ${fmt(c.limit)} limit · ${u}% used`:''}</div>${c.limit?`<div class="bar ${u>=70?'warn':''}"><i style="width:${Math.min(100,u)}%"></i></div>`:''}
-    <div class="row" style="margin-top:10px"><button class="btn s" onclick="form.type='cardpay';form.acct='${c.id}';go('add')">Pay bill</button><button class="link" onclick="delCard('${c.id}')">${pdel===c.id?'Sure?':'Remove'}</button></div></div>`}).join('');
+    <div class="row" style="margin-top:10px"><button class="btn s" onclick="draft.type='cardpay';draft.acct='${c.id}';go('add')">Pay bill</button><button class="link" onclick="delCard('${c.id}')">${pdel===c.id?'Sure?':'Remove'}</button></div></div>`}).join('');
   return`<h1>Credit cards</h1>${list||'<div class="card empty">No cards yet. Add one, then pick it when you log an expense.</div>'}
   ${show==='card'?`<div class="card"><label for="c_n">Card name</label><input id="c_n" placeholder="HDFC Regalia"><label for="c_l">Credit limit (₹)</label><input id="c_l" type="number" inputmode="decimal"><label for="c_d">Bill due day of month</label><input id="c_d" type="number" min="1" max="31" value="15"><button class="btn" onclick="addCard()">Save card</button></div>`:`<button class="btn" onclick="show='card';render()">Add a credit card</button>`}`;
 }
