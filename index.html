@@ -119,15 +119,15 @@ function vAdd(){
   const f=form,cats=CATS[f.type],isPay=f.type==='cardpay';
   const accts=isPay?S.cards.map(c=>[c.id,c.name]):[['cash','Cash / UPI / Bank']].concat(f.type==='expense'?S.cards.map(c=>[c.id,c.name]):[]);
   if(!accts.find(a=>a[0]===f.acct))f.acct=accts.length?accts[0][0]:'cash';
-  return`<h1>Add entry</h1><div class="seg">${TYPES.map(([k,n])=>`<button class="${f.type===k?'on':''}" onclick="form.type='${k}';readF();render()">${n}</button>`).join('')}</div>
+  return`<h1>Add entry</h1><div class="seg">${TYPES.map(([k,n])=>`<button class="${f.type===k?'on':''}" onclick="readF();form.type='${k}';form.cat='';render()">${n}</button>`).join('')}</div>
   <div class="card" style="margin-top:12px">
   <label for="a_amt">Amount (₹)</label><input id="a_amt" type="number" inputmode="decimal" min="0" placeholder="0" value="${esc(f.amt||'')}">
   <label for="a_cat">Category</label><select id="a_cat">${cats.map(c=>`<option ${f.cat===c?'selected':''}>${esc(c)}</option>`).join('')}</select>
   <label for="a_acct">${isPay?'Which card':(f.type==='expense'?'Paid with':'Account')}</label>
-  ${isPay&&!S.cards.length?'<div class="sub">Add a credit card first in the Cards tab.</div>':`<select id="a_acct">${accts.map(([id,n])=>`<option value="${esc(id)}" ${f.acct===id?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
+  ${isPay&&!S.cards.length?'<div class="sub">You need a credit card before you can record a bill payment.</div><button class="btn" onclick="go(&#39;card&#39;)">Add a credit card</button>':`<select id="a_acct">${accts.map(([id,n])=>`<option value="${esc(id)}" ${f.acct===id?'selected':''}>${esc(n)}</option>`).join('')}</select>`}
   <label for="a_date">Date</label><input id="a_date" type="date" value="${esc(f.date)}">
   <label for="a_note">Note (optional)</label><input id="a_note" placeholder="e.g. Dinner with friends" value="${esc(f.note||'')}">
-  <button class="btn" onclick="saveTx()">Save entry</button></div>`;
+  ${isPay&&!S.cards.length?'':'<button class="btn" onclick="saveTx()">Save entry</button>'}</div>`;
 }
 function readF(){const g=i=>{const e=document.getElementById(i);return e?e.value:undefined};['amt','cat','acct','date','note'].forEach(k=>{const v=g('a_'+k);if(v!==undefined)form[k]=v})}
 function saveTx(){readF();const amt=parseFloat(form.amt);if(!(amt>0)){toast('Enter an amount above zero');return}
