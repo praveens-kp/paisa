@@ -65,6 +65,8 @@ nav button.on{color:var(--acc)}
 const K='paisa_v1';
 let S=load();
 function load(){try{const j=localStorage.getItem(K);if(j){const d=JSON.parse(j);return{tx:d.tx||[],emis:d.emis||[],cards:d.cards||[]}}}catch(e){}return{tx:[],emis:[],cards:[]}}
+function sync(){try{const j=localStorage.getItem(K);if(j){const d=JSON.parse(j);S={tx:d.tx||[],emis:d.emis||[],cards:d.cards||[]}}}catch(e){}}
+function refresh(){if(tab==='add')readF();sync();render()}
 function save(){try{localStorage.setItem(K,JSON.stringify(S))}catch(e){toast('Couldn’t save – storage is blocked')}}
 const $=s=>document.querySelector(s);
 const esc=s=>String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
@@ -79,7 +81,7 @@ const ICON={home:'<path d="M3 11l9-8 9 8v10H3z"/>',txn:'<path d="M4 6h16M4 12h16
 const NAMES={home:'Home',txn:'History',add:'Add',emi:'EMIs',card:'Cards'};
 
 function toast(m){const t=document.createElement('div');t.className='toast';t.textContent=m;document.body.appendChild(t);setTimeout(()=>t.remove(),1800)}
-function go(t){tab=t;show='';pdel='';render();scrollTo(0,0)}
+function go(t){sync();tab=t;show='';pdel='';render();scrollTo(0,0)}
 function shift(d){let[y,m]=mon.split('-').map(Number);m+=d;if(m<1){m=12;y--}if(m>12){m=1;y++}mon=y+'-'+String(m).padStart(2,'0');render()}
 const monLabel=m=>MN[+m.slice(5)-1]+' '+m.slice(0,4);
 const sum=a=>a.reduce((s,t)=>s+t.amt,0);
@@ -163,6 +165,7 @@ function delCard(id){if(pdel!==id){pdel=id;render();return}S.cards=S.cards.filte
 function exportD(){const b=new Blob([JSON.stringify(S)],{type:'application/json'}),a=document.createElement('a');a.href=URL.createObjectURL(b);a.download='paisa-backup-'+todayS()+'.json';a.click();toast('Backup created')}
 function importD(el){const f=el.files[0];if(!f)return;const r=new FileReader();r.onload=()=>{try{const d=JSON.parse(r.result);if(!Array.isArray(d.tx))throw 0;S={tx:d.tx,emis:d.emis||[],cards:d.cards||[]};save();toast('Backup restored');render()}catch(e){toast('That file isn’t a Paisa backup')}};r.readAsText(f)}
 render();
+document.addEventListener('visibilitychange',()=>{if(!document.hidden)refresh()});addEventListener('pageshow',refresh);addEventListener('storage',e=>{if(e.key===K)refresh()});
 if('serviceWorker' in navigator){addEventListener('load',()=>navigator.serviceWorker.register('sw.js').catch(()=>{}))}
 </script>
 </body>
